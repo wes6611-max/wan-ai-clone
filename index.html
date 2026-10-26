@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WAN AI Clone - Image to Video</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --panel: #111111;
+      --panel-2: #161616;
+      --border: #232323;
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --accent: #8b5cf6;
+      --accent-2: #ec4899;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: white;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .badge {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* Main Layout */
+    .app {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: calc(100vh - 57px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #0e0e0e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    .tab {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab.active {
+      background: #1c1c1c;
+      color: white;
+      border: 1px solid #2a2a2a;
+    }
+
+    .tab:hover:not(.active) {
+      color: #ccc;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      background: #0f0f0f;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .upload-zone:hover {
+      border-color: #3a3a3a;
+    }
+
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      background: #1c1c1c;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+
+    .upload-text {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .upload-hint {
+      font-size: 11px;
+      color: #4a4a4a;
+      font-family: monospace;
+    }
+
+    .btn-upload {
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-upload:hover {
+      opacity: 0.9;
+    }
+
+    /* Preview */
+    .preview-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+    }
+
+    .preview-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .btn-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+
+    .preview-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Input group */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #7a7a7a;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: white;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: #3a3a3a;
+    }
+
+    textarea::placeholder {
+      color: #4a4a4a;
+    }
+
+    .char-count {
+      text-align: right;
+      font-size: 11px;
+      color: #4a4a4a;
+      font-family: monospace;
+    }
+
+    /* Settings */
+    .settings-section {
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .settings-title {
+      font-size: 11px;
+      color: #6a6a6a;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .settings-title::before,
+    .settings-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-label {
+      font-size: 10px;
+      color: #6a6a6a;
+      text-transform: uppercase;
+    }
+
+    .options-group {
+      display: flex;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .option-btn {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: #6a6a6a;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .option-btn.active {
+      background: white;
+      color: black;
+    }
+
+    .option-btn:hover:not(.active) {
+      color: white;
+    }
+
+    /* Generate Button */
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .btn-generate:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-generate.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(1200px 600px at 50% -10%, rgba(139, 92, 246, 0.15), transparent);
+    }
+
+    .canvas-container {
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 16/9;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #111;
+      border: 1px solid var(--border);
+      position: relative;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(14, 14, 14, 0.6);
+      backdrop-filter: blur(2px);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .canvas-overlay h3 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .canvas-overlay p {
+      font-size: 13px;
+      color: #6a6a6a;
+      max-width: 340px;
+      line-height: 1.5;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      z-index: 10;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #2a2a2a;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      width: 100%;
+      max-width: 300px;
+      height: 4px;
+      background: #1e1e1e;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* Video Info Bar */
+    .video-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .video-info .prompt-text {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.4;
+      max-width: 70%;
+    }
+
+    .video-info .tags {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.8);
+      font-family: monospace;
+    }
+
+    /* Download Button */
+    .btn-download {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: white;
+      color: black;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 5;
+      transition: background 0.2s;
+    }
+
+    .btn-download:hover {
+      background: #e5e5e5;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      animation: slideUp 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      max-width: 90vw;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .toast.error {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+    }
+
+    .toast.success {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.1);
+      color: #6ee7b7;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .main-content {
+        padding: 16px;
+        min-height: 56vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 10px 14px;
+      }
+
+      .logo-text {
+        font-size: 15px;
+      }
+
+      .badge {
+        display: none;
+      }
+
+      .sidebar {
+        padding: 14px;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 2px;
+    }
+
+    /* Hidden input */
+    .hidden-input {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">W</div>
+      <span class="logo-text">WAN AI</span>
+      <span class="badge">V2.2</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="display: none; align-items: center; gap: 8px; background: #141414; border: 1px solid #232323; border-radius: 20px; padding: 6px 12px;" class="status-indicator">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; animation: pulse 2s infinite;"></div>
+        <span style="font-size: 11px; color: #a0a0a0; font-family: monospace;">Prêt</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Layout -->
+  <div class="app">
+    <!-- Sidebar Controls -->
+    <aside class="sidebar">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab" data-mode="text">📝 Texte vers Vidéo</button>
+        <button class="tab active" data-mode="image">🖼️ Image vers Vidéo</button>
+      </div>
+
+      <!-- Upload Section (Image Mode) -->
+      <div id="uploadSection">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" class="hidden-input" accept="image/*">
+          <div class="upload-icon">📁</div>
+          <p class="upload-text">Tapez ou glissez une image</p>
+          <p class="upload-hint">PNG, JPG, WEBP • max 15MB</p>
+          <button class="btn-upload" id="btnUpload">Choisir une image</button>
+        </div>
+
+        <!-- Image Preview -->
+        <div id="previewSection" style="display: none; margin-top: 16px;">
+          <div class="preview-container">
+            <img id="previewImg" class="preview-img" alt="Aperçu">
+            <button class="btn-remove" id="btnRemove">✕</button>
+            <div class="preview-info">
+              <span id="previewName">image.jpg</span>
+              <span id="previewSize">0 Ko</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt Input -->
+      <div class="input-group">
+        <label class="label">✨ Invite</label>
+        <textarea id="promptInput" placeholder="Décrivez votre vidéo... Ex: Un coucher de soleil cinématographique sur une ville futuriste" maxlength="1000"></textarea>
+        <div class="char-count"><span id="charCount">0</span>/1000</div>
+      </div>
+
+      <!-- Settings -->
+      <div class="settings-section">
+        <div class="settings-title">Réglages</div>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">⏱ Durée</label>
+            <div class="options-group" id="durationGroup">
+              <button class="option-btn active" data-value="5s">5s</button>
+              <button class="option-btn" data-value="10s">10s</button>
+            </div>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">🖥 Résolution</label>
+            <div class="options-group" id="resolutionGroup">
+              <button class="option-btn" data-value="720p">720p</button>
+              <button class="option-btn active" data-value="1080p">1080p</button>
+            </div>
+          </div>
+        </div>
+        <div class="setting-item" style="margin-top: 12px;">
+          <label class="setting-label">📐 Ratio</label>
+          <div class="options-group" id="aspectGroup">
+            <button class="option-btn active" data-value="16:9">16:9</button>
+            <button class="option-btn" data-value="9:16">9:16</button>
+            <button class="option-btn" data-value="1:1">1:1</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <button class="btn-generate" id="btnGenerate" disabled>
+        <span>✨</span> Générer la vidéo
+      </button>
+    </aside>
+
+    <!-- Main Preview -->
+    <main class="main-content">
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="canvas"></canvas>
+        
+        <!-- Download button (hidden by default) -->
+        <button class="btn-download" id="btnDownload" style="display: none;">⬇ Télécharger</button>
+
+        <!-- Empty State Overlay -->
+        <div class="canvas-overlay" id="emptyOverlay">
+          <h3>🎬 Aucune vidéo pour l'instant</h3>
+          <p>Uploadez une image, décrivez votre scène, et générez une vidéo animée avec effet Ken Burns.</p>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+          <div class="spinner"></div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+          </div>
+          <div class="progress-text" id="progressText">Analyse de l'image...</div>
+        </div>
+
+        <!-- Video Info Bar (hidden by default) -->
+        <div class="video-info" id="videoInfo" style="display: none;">
+          <div class="prompt-text" id="videoPromptText">"Votre prompt"</div>
+          <div class="tags">
+            <span class="tag" id="videoDurationTag">5s</span>
+            <span class="tag" id="videoResolutionTag">1080p</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ============================================================
+    // WAN AI Clone - Image to Video Generator
+    // Version simplifiée et fonctionnelle
+    // ============================================================
+
+    // State
+    const state = {
+      mode: 'image', // 'text' or 'image'
+      imageFile: null,
+      imageDataUrl: null,
+      imageElement: null,
+      prompt: '',
+      duration: '5s',
+      resolution: '1080p',
+      aspect: '16:9',
+      isGenerating: false,
+      hasVideo: false,
+      animationFrameId: null,
+      videoStartTime: null,
+      currentProgress: 0
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const btnUpload = document.getElementById('btnUpload');
+    const previewSection = document.getElementById('previewSection');
+    const previewImg = document.getElementById('previewImg');
+    const previewName = document.getElementById('previewName');
+    const previewSize = document.getElementById('previewSize');
+    const btnRemove = 
